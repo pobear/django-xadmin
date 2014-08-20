@@ -8,7 +8,7 @@ from django.db.models.fields import FieldDoesNotExist
 from django.db.models.related import RelatedObject
 from django.db.models.sql.query import LOOKUP_SEP, QUERY_TERMS
 from django.template import loader
-from django.utils.encoding import smart_str
+from django.utils.encoding import smart_str, force_unicode
 from django.utils.translation import ugettext as _
 
 from xadmin.filters import manager as filter_manager, FILTER_PREFIX, SEARCH_VAR, DateFieldListFilter, RelatedFieldSearchFilter
@@ -119,7 +119,7 @@ class FilterPlugin(BaseAdminPlugin):
 
                     if len(field_parts)>1:
                         # Add related model name to title
-                        spec.title = "%s %s"%(field_parts[-2].name,spec.title)
+                        spec.title = "%s %s"%(field_parts[-2].name, force_unicode(spec.title))
 
                     # Check if we need to use distinct()
                     use_distinct = (use_distinct or
