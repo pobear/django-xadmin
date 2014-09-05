@@ -2,7 +2,7 @@ import StringIO
 import datetime
 import sys
 
-from django.http import HttpResponse
+from django.http import StreamingHttpResponse
 from django.template import loader
 from django.utils.encoding import force_unicode, smart_unicode
 from django.utils.html import escape
@@ -64,7 +64,7 @@ class ExportPlugin(BaseAdminPlugin):
         elif str(o.text).startswith("<span class='text-muted'>"):
             value = escape(str(o.text)[25:-7])
         else:
-            value = escape(str(o.text))
+            value = escape(str(force_unicode(o.text)))
         return value
 
     def _get_objects(self, context):
@@ -173,9 +173,9 @@ class ExportPlugin(BaseAdminPlugin):
             datas = datas[1:]
 
         for row in datas:
-            stream.append(','.join(map(self._format_csv_text, row)))
+            stream.append('%s\r\n' % ','.join(map(self._format_csv_text, row)))
 
-        return '\r\n'.join(stream)
+        return stream
 
     def _to_xml(self, xml, data):
         if isinstance(data, (list, tuple)):
@@ -214,14 +214,19 @@ class ExportPlugin(BaseAdminPlugin):
 
     def get_response(self, response, context, *args, **kwargs):
         file_type = self.request.GET.get('export_type', 'csv')
-        response = HttpResponse(
-            mimetype="%s; charset=UTF-8" % self.export_mimes[file_type])
+
+        result = getattr(self, 'get_%s_export' % file_type)(context)
+        if not isinstance(result, (list, tuple)):
+            result = (result,)
+
+        response = StreamingHttpResponse(
+            result, mimetype="%s; charset=UTF-8" % self.export_mimes[file_type])
 
         file_name = self.opts.verbose_name.replace(' ', '_')
         response['Content-Disposition'] = ('attachment; filename=%s.%s' % (
             file_name, file_type)).encode('utf-8')
 
-        response.write(getattr(self, 'get_%s_export' % file_type)(context))
+        #response.write(getattr(self, 'get_%s_export' % file_type)(context))
         return response
 
     # View Methods
