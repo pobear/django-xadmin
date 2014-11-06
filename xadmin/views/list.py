@@ -551,9 +551,9 @@ class ListAdminView(ModelAdminView):
                     if field_val is None:
                         item.text = mark_safe("<span class='text-muted'>%s</span>" % EMPTY_CHANGELIST_VALUE)
                     else:
-                        item.text = field_val
+                        item.text = force_unicode(field_val)
                 else:
-                    item.text = display_for_field(value, f)
+                    item.text = force_unicode(display_for_field(value, f))
                 if isinstance(f, models.DateField)\
                     or isinstance(f, models.TimeField)\
                         or isinstance(f, models.ForeignKey):
