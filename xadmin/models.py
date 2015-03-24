@@ -15,10 +15,12 @@ from django.contrib.auth.models import Permission
 import datetime
 import decimal
 
-if django.VERSION[1] > 4:
-    AUTH_USER_MODEL = django.contrib.auth.get_user_model()
-else:
-    AUTH_USER_MODEL = getattr(settings, 'AUTH_USER_MODEL', 'auth.User')
+# if django.VERSION[1] > 4:
+#     AUTH_USER_MODEL = django.contrib.auth.get_user_model()
+# else:
+#     AUTH_USER_MODEL = getattr(settings, 'AUTH_USER_MODEL', 'auth.User')
+AUTH_USER_MODEL = getattr(settings, 'AUTH_USER_MODEL', 'auth.User')
+print 'AUTH_USER_MODEL___', AUTH_USER_MODEL
 
 
 def add_view_permissions(sender, **kwargs):

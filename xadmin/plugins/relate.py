@@ -1,4 +1,5 @@
 # coding=UTF-8
+import django
 from django.core.urlresolvers import reverse
 from django.utils.encoding import force_unicode
 from django.utils.encoding import smart_str
@@ -43,7 +44,7 @@ class RelateMenuPlugin(BaseAdminPlugin):
         links = []
         for r, view_perm, add_perm in self.get_related_list():
             label = r.opts.app_label
-            model_name = r.opts.module_name
+            model_name = django.VERSION < (1, 7) and r.opts.module_name or r.opts.model_name
             f = r.field
             rel_name = f.rel.get_related_field().name
 

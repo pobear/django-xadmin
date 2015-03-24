@@ -1,5 +1,6 @@
 import sys
 from functools import update_wrapper
+import django
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.db.models.base import ModelBase
@@ -107,7 +108,12 @@ class AdminSite(object):
                     # which causes issues later on.
                     options['__module__'] = __name__
 
-                admin_class = type(str("%s%sAdmin" % (model._meta.app_label, model._meta.module_name)), (admin_class,), options or {})
+                if django.VERSION < (1, 7):
+                    model_name = model._meta.module_name
+                else:
+                    model_name = model._meta.model_name
+
+                admin_class = type(str("%s%sAdmin" % (model._meta.app_label, model_name)), (admin_class,), options or {})
                 admin_class.model = model
                 admin_class.order = self.model_admins_order
                 self.model_admins_order += 1
@@ -306,15 +312,20 @@ class AdminSite(object):
 
         # Add in each model's views.
         for model, admin_class in self._registry.iteritems():
+            if django.VERSION < (1, 7):
+                model_name = model._meta.module_name
+            else:
+                model_name = model._meta.model_name
+
             view_urls = [url(
                 path, wrap(
                     self.create_model_admin_view(clz, model, admin_class)),
-                name=name % (model._meta.app_label, model._meta.module_name))
+                name=name % (model._meta.app_label, model_name))
                 for path, clz, name in self._registry_modelviews]
             urlpatterns += patterns('',
                                     url(
                                     r'^%s/%s/' % (
-                                        model._meta.app_label, model._meta.module_name),
+                                        model._meta.app_label, model_name),
                                     include(patterns('', *view_urls)))
                                     )
 

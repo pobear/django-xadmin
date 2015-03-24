@@ -36,6 +36,7 @@ try:
     from django.contrib.auth import get_user_model
     User = get_user_model()
     username_field = User.USERNAME_FIELD
+    print 'User____', User
 except Exception:
     from django.contrib.auth.models import User
     username_field = 'username'

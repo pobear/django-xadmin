@@ -1,3 +1,4 @@
+import django
 from django.db import models
 from django.core.exceptions import ImproperlyConfigured
 from django.utils.encoding import smart_unicode
@@ -332,8 +333,10 @@ class RelatedFieldSearchFilter(FieldFilter):
         else:
             self.lookup_title = other_model._meta.verbose_name
         self.title = self.lookup_title
+
+        model_name = django.VERSION < (1, 7) and other_model._meta.module_name or other_model._meta.model_name
         self.search_url = model_admin.get_admin_url('%s_%s_changelist' % (
-            other_model._meta.app_label, other_model._meta.module_name))
+            other_model._meta.app_label, model_name))
         self.label = self.label_for_value(other_model, rel_name, self.lookup_exact_val) if self.lookup_exact_val else ""
         self.choices = '?'
         if field.rel.limit_choices_to:
