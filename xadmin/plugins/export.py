@@ -220,7 +220,7 @@ class ExportPlugin(BaseAdminPlugin):
             result = (result,)
 
         response = StreamingHttpResponse(
-            result, mimetype="%s; charset=UTF-8" % self.export_mimes[file_type])
+            result, content_type="%s; charset=UTF-8" % self.export_mimes[file_type])
 
         file_name = self.opts.verbose_name.replace(' ', '_')
         response['Content-Disposition'] = ('attachment; filename=%s.%s' % (
