@@ -2,7 +2,8 @@ import django
 from django.db import models
 from django.db.models.sql.query import LOOKUP_SEP
 from django.db.models.deletion import Collector
-from django.db.models.related import RelatedObject
+# from django.db.models.related import RelatedObject
+from django.db.models.fields.related import ForeignObjectRel as RelatedObject
 from django.forms.forms import pretty_name
 from django.utils import formats
 from django.utils.html import escape
@@ -36,7 +37,6 @@ try:
     from django.contrib.auth import get_user_model
     User = get_user_model()
     username_field = User.USERNAME_FIELD
-    print 'User____', User
 except Exception:
     from django.contrib.auth.models import User
     username_field = 'username'
@@ -78,7 +78,7 @@ def xstatic(*tags):
             files = node[mode]
 
         files = type(files) in (list, tuple) and files or [files, ]
-        fs.extend(files)
+        fs.extend([f % {'lang': lang.replace('_', '-')} for f in files])
 
     return [f.startswith('http://') and f or static(f) for f in fs]
 
@@ -103,7 +103,7 @@ def lookup_needs_distinct(opts, lookup_path):
     field = opts.get_field_by_name(field_name)[0]
     if ((hasattr(field, 'rel') and
          isinstance(field.rel, models.ManyToManyRel)) or
-        (isinstance(field, models.related.RelatedObject) and
+        (isinstance(field, models.fields.related.ForeignObjectRel) and
          not field.field.unique)):
         return True
     return False
@@ -201,8 +201,7 @@ def get_deleted_objects(objs, opts, user, admin_site, using):
                                    opts.app_label,
                                    opts.object_name.lower()),
                                 None, (quote(obj._get_pk_val()),))
-            p = '%s.%s' % (opts.app_label,
-                           opts.get_delete_permission())
+            p = '%s.delete_%s' % (opts.app_label, opts.model_name)
             if not user.has_perm(p):
                 perms_needed.add(opts.verbose_name)
             # Display a link to the admin page.
@@ -234,7 +233,7 @@ class NestedObjects(Collector):
 
     def collect(self, objs, source_attr=None, **kwargs):
         for obj in objs:
-            if source_attr:
+            if source_attr and hasattr(obj, source_attr):
                 self.add_edge(getattr(obj, source_attr), obj)
             else:
                 self.add_edge(None, obj)
@@ -312,6 +311,12 @@ def model_ngettext(obj, n=None):
     singular, plural = d["verbose_name"], d["verbose_name_plural"]
     return ungettext(singular, plural, n or 0)
 
+def is_rel_field(name,model):
+    if hasattr(name,'split') and name.find("__")>0:
+        parts = name.split("__")
+        if parts[0] in model._meta.get_all_field_names():
+            return True
+    return False
 
 def lookup_field(name, obj, model_admin=None):
     opts = obj._meta
@@ -328,6 +333,12 @@ def lookup_field(name, obj, model_admin=None):
             attr = getattr(model_admin, name)
             value = attr(obj)
         else:
+            if is_rel_field(name,obj):
+                parts = name.split("__")
+                rel_name,sub_rel_name = parts[0],"__".join(parts[1:])
+                rel_obj =  getattr(obj,rel_name)
+                if rel_obj is not None:
+                    return lookup_field(sub_rel_name,rel_obj,model_admin)
             attr = getattr(obj, name)
             if callable(attr):
                 value = attr()
@@ -368,6 +379,23 @@ def label_for_field(name, model, model_admin=None, return_attr=False):
                 attr = getattr(model_admin, name)
             elif hasattr(model, name):
                 attr = getattr(model, name)
+            elif is_rel_field(name,model):
+                parts = name.split("__")
+                rel_name,name = parts[0],"__".join(parts[1:])
+                field = model._meta.get_field_by_name(rel_name)[0]
+                if isinstance(field, RelatedObject):
+                    label = field.opts.verbose_name
+                else:
+                    label = field.verbose_name
+                
+                rel_model = field.rel.to
+                rel_label = label_for_field(name, rel_model, model_admin=model_admin, return_attr=return_attr)
+                
+                if return_attr:
+                    rel_label,attr = rel_label
+                    return ("%s %s"%(label,rel_label), attr)
+                else:
+                    return "%s %s"%(label,rel_label)
             else:
                 message = "Unable to lookup '%s' on %s" % (
                     name, model._meta.object_name)
@@ -399,7 +427,7 @@ def help_text_for_field(name, model):
 
 
 def admin_urlname(value, arg):
-    return 'xadmin:%s_%s_%s' % (value.app_label, value.module_name, arg)
+    return 'xadmin:%s_%s_%s' % (value.app_label, value.model_name, arg)
 
 
 def boolean_icon(field_val):
@@ -454,7 +482,7 @@ class NotRelationField(Exception):
 
 
 def get_model_from_relation(field):
-    if isinstance(field, models.related.RelatedObject):
+    if isinstance(field, models.fields.related.ForeignObjectRel):
         return field.model
     elif getattr(field, 'rel'):  # or isinstance?
         return field.rel.to

@@ -18,6 +18,7 @@ from xadmin.views.detail import DetailAdminUtil
 
 from base import CommAdminView, filter_hook, csrf_protect_m
 
+
 class FormAdminView(CommAdminView):
     form = forms.ModelForm
     title = None
@@ -164,8 +165,8 @@ class FormAdminView(CommAdminView):
         msg = _('The %s was changed successfully.') % self.title
         self.message_user(msg, 'success')
 
-        if "_redirect" in request.REQUEST:
-            return request.REQUEST["_redirect"]
+        if "_redirect" in [request.GET, request.POST]:
+            return request.GET["_redirect"] or request.POST["_redirect"]
         else:
             return self.get_redirect_url()
 

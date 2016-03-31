@@ -20,14 +20,15 @@ def view_block(context, block_name, *args, **kwargs):
             if result and type(result) in (str, unicode):
                 nodes.append(result)
     if nodes:
-        return ''.join(nodes)
+        from django.utils.safestring import mark_safe
+        return mark_safe(''.join(nodes))
     else:
         return ""
 
 
 @register.filter
 def admin_urlname(value, arg):
-    return 'xadmin:%s_%s_%s' % (value.app_label, value.module_name, arg)
+    return 'xadmin:%s_%s_%s' % (value.app_label, value.model_name, arg)
 
 static = register.simple_tag(static)
 

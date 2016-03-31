@@ -1,4 +1,5 @@
 import copy
+from crispy_forms.utils import TEMPLATE_PACK
 
 from django import forms
 from django.contrib.contenttypes.models import ContentType
@@ -35,7 +36,7 @@ class ShowField(Field):
 
         self.results = [(field, callback(field)) for field in self.fields]
 
-    def render(self, form, form_style, context):
+    def render(self, form, form_style, context, template_pack=TEMPLATE_PACK):
         if hasattr(self, 'wrapper_class'):
             context['wrapper_class'] = self.wrapper_class
 
@@ -196,7 +197,6 @@ class DetailAdminView(ModelAdminView):
             exclude.extend(self.form._meta.exclude)
         # if exclude is an empty list we pass None to be consistant with the
         # default on modelform_factory
-        exclude = exclude or None
         defaults = {
             "form": self.form,
             "fields": self.fields and list(self.fields) or None,
@@ -256,10 +256,8 @@ class DetailAdminView(ModelAdminView):
 
     @filter_hook
     def get_media(self):
-        media = super(DetailAdminView, self).get_media()
-        media = media + self.form_obj.media
-        media.add_css({'screen': [self.static('xadmin/css/xadmin.form.css')]})
-        return media
+        return super(DetailAdminView, self).get_media() + self.form_obj.media + \
+            self.vendor('xadmin.page.form.js', 'xadmin.form.css')
 
     @filter_hook
     def get_field_result(self, field_name):

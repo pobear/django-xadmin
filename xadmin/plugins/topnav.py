@@ -1,4 +1,4 @@
-import django
+
 from django.template import loader
 from django.utils.text import capfirst
 from django.core.urlresolvers import reverse, NoReverseMatch
@@ -31,8 +31,7 @@ class TopNavPlugin(BaseAdminPlugin):
             app_label = model._meta.app_label
 
             if self.has_model_perm(model, "view"):
-                model_name = django.VERSION < (1, 7) and model._meta.module_name or model._meta.model_name
-                info = (app_label, model_name)
+                info = (app_label, model._meta.model_name)
                 if getattr(self.admin_site._registry[model], 'search_fields', None):
                     try:
                         search_models.append({
@@ -58,8 +57,7 @@ class TopNavPlugin(BaseAdminPlugin):
             app_label = model._meta.app_label
 
             if self.has_model_perm(model, "add"):
-                model_name = django.VERSION < (1, 7) and model._meta.module_name or model._meta.model_name
-                info = (app_label, model_name)
+                info = (app_label, model._meta.model_name)
                 try:
                     add_models.append({
                         'title': _('Add %s') % capfirst(model._meta.verbose_name),

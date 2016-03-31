@@ -148,8 +148,7 @@ class EditPatchView(ModelFormAdminView, ListAdminView):
             result['result'] = 'success'
             result['new_data'] = form.cleaned_data
             result['new_html'] = dict(
-                # fix for fileds with choices
-                [(f, force_unicode(self.get_new_field_html(f))) for f in fields])
+                [(f, self.get_new_field_html(f)) for f in fields])
         else:
             result['result'] = 'error'
             result['errors'] = JsonErrorDict(form.errors, form).as_json()

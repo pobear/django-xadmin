@@ -2,10 +2,12 @@ import re
 from django import forms
 from django.db import models
 from django.template import loader
-from django.contrib.formtools.wizard.storage import get_storage
-from django.contrib.formtools.wizard.forms import ManagementForm
-from django.contrib.formtools.wizard.views import StepsHelper
-from django.utils.datastructures import SortedDict
+from formtools.wizard.storage import get_storage
+from formtools.wizard.forms import ManagementForm
+from formtools.wizard.views import StepsHelper
+from collections import OrderedDict as SortedDict
+# from django.utils.datastructures import SortedDict
+
 from django.forms import ValidationError
 from django.forms.models import modelform_factory
 from xadmin.sites import site
@@ -22,7 +24,7 @@ class WizardFormPlugin(BaseAdminPlugin):
     wizard_form_list = None
     wizard_for_update = False
 
-    storage_name = 'django.contrib.formtools.wizard.storage.session.SessionStorage'
+    storage_name = 'formtools.wizard.storage.session.SessionStorage'
     form_list = None
     initial_dict = None
     instance_dict = None
@@ -270,9 +272,9 @@ class WizardFormPlugin(BaseAdminPlugin):
         if step is None:
             step = self.steps.current
         form_list = self.get_form_list()
-        key = form_list.keyOrder.index(step) + 1
-        if len(form_list.keyOrder) > key:
-            return form_list.keyOrder[key]
+        key = form_list.keys().index(step) + 1
+        if len(form_list.keys()) > key:
+            return form_list.keys()[key]
         return None
 
     def get_prev_step(self, step=None):
@@ -284,9 +286,9 @@ class WizardFormPlugin(BaseAdminPlugin):
         if step is None:
             step = self.steps.current
         form_list = self.get_form_list()
-        key = form_list.keyOrder.index(step) - 1
+        key = form_list.keys().index(step) - 1
         if key >= 0:
-            return form_list.keyOrder[key]
+            return form_list.keys()[key]
         return None
 
     def get_step_index(self, step=None):
@@ -296,7 +298,7 @@ class WizardFormPlugin(BaseAdminPlugin):
         """
         if step is None:
             step = self.steps.current
-        return self.get_form_list().keyOrder.index(step)
+        return self.get_form_list().keys().index(step)
 
     def block_before_fieldsets(self, context, nodes):
         context.update(dict(self.storage.extra_data))

@@ -9,18 +9,16 @@ from django.core.serializers.json import DjangoJSONEncoder
 from django.db.models.base import ModelBase
 from django.utils.encoding import smart_unicode
 
-from django.db.models.signals import post_syncdb
+from django.db.models.signals import post_migrate as post_syncdb 
 from django.contrib.auth.models import Permission
 
 import datetime
 import decimal
 
-# if django.VERSION[1] > 4:
-#     AUTH_USER_MODEL = django.contrib.auth.get_user_model()
-# else:
-#     AUTH_USER_MODEL = getattr(settings, 'AUTH_USER_MODEL', 'auth.User')
-AUTH_USER_MODEL = getattr(settings, 'AUTH_USER_MODEL', 'auth.User')
-print 'AUTH_USER_MODEL___', AUTH_USER_MODEL
+if 4 < django.VERSION[1] < 7:
+    AUTH_USER_MODEL = django.contrib.auth.get_user_model()
+else:
+    AUTH_USER_MODEL = getattr(settings, 'AUTH_USER_MODEL', 'auth.User')
 
 
 def add_view_permissions(sender, **kwargs):
@@ -77,7 +75,7 @@ class JSONEncoder(DjangoJSONEncoder):
         elif isinstance(o, decimal.Decimal):
             return str(o)
         elif isinstance(o, ModelBase):
-            return '%s.%s' % (o._meta.app_label, o._meta.module_name)
+            return '%s.%s' % (o._meta.app_label, o._meta.model_name)
         else:
             try:
                 return super(JSONEncoder, self).default(o)

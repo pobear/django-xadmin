@@ -1,6 +1,8 @@
-from xadmin.sites import AdminSite, site
+# from xadmin.sites import AdminSite, site
 
-VERSION = [0,5,0]
+VERSION = [0, 5, 0]
+
+site = None
 
 
 class Settings(object):
@@ -13,10 +15,11 @@ def autodiscover():
     not present. This forces an import on them to register any admin bits they
     may want.
     """
-
+    global site
     from django.conf import settings
-    from django.utils.importlib import import_module
+    from importlib import import_module
     from django.utils.module_loading import module_has_submodule
+    from xadmin.sites import site
 
     setattr(settings, 'CRISPY_TEMPLATE_PACK', 'bootstrap3')
     setattr(settings, 'CRISPY_CLASS_CONVERTERS', {
@@ -65,3 +68,6 @@ def autodiscover():
             # attempting to import it, otherwise we want it to bubble up.
             if module_has_submodule(mod, 'adminx'):
                 raise
+
+
+default_app_config = 'xadmin.apps.XAdminConfig'

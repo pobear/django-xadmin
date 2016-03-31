@@ -1,4 +1,5 @@
 from django.contrib.contenttypes.generic import GenericRelation
+from crispy_forms.utils import TEMPLATE_PACK
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import PermissionDenied
 from django.db import models
@@ -221,7 +222,7 @@ class RecoverListView(BaseReversionView):
         context.update({
             "opts": opts,
             "app_label": opts.app_label,
-            "module_name": capfirst(opts.verbose_name),
+            "model_name": capfirst(opts.verbose_name),
             "title": _("Recover deleted %(name)s") % {"name": force_unicode(opts.verbose_name_plural)},
             "deleted": deleted,
             "changelist_url": self.model_admin_url("changelist"),
@@ -262,7 +263,7 @@ class RevisionListView(BaseReversionView):
         context.update({
             'title': _('Change history: %s') % force_unicode(self.obj),
             'action_list': action_list,
-            'module_name': capfirst(force_unicode(opts.verbose_name_plural)),
+            'model_name': capfirst(force_unicode(opts.verbose_name_plural)),
             'object': self.obj,
             'app_label': opts.app_label,
             "changelist_url": self.model_admin_url("changelist"),
@@ -401,7 +402,7 @@ class BaseRevisionView(ModelFormAdminView):
 
 class DiffField(Field):
 
-    def render(self, form, form_style, context):
+    def render(self, form, form_style, context, template_pack=TEMPLATE_PACK):
         html = ''
         for field in self.fields:
             html += ('<div class="diff_field" rel="tooltip"><textarea class="org-data" style="display:none;">%s</textarea>%s</div>' %
@@ -497,11 +498,11 @@ class RecoverView(BaseRevisionView):
 
 class InlineDiffField(Field):
 
-    def render(self, form, form_style, context):
+    def render(self, form, form_style, context, template_pack=TEMPLATE_PACK):
         html = ''
         instance = form.instance
         if not instance.pk:
-            return super(InlineDiffField, self).render(form, form_style, context)
+            return super(InlineDiffField, self).render(form, form_style, context, template_pack=template_pack)
 
         initial = form.initial
         opts = instance._meta
@@ -580,7 +581,7 @@ class InlineRevisionPlugin(BaseAdminPlugin):
         if self.request.method == 'GET' and formset.helper and formset.helper.layout:
             helper = formset.helper
             helper.filter(basestring).wrap(InlineDiffField)
-            fake_admin_class = type(str('%s%sFakeAdmin' % (self.opts.app_label, self.opts.module_name)), (object, ), {'model': self.model})
+            fake_admin_class = type(str('%s%sFakeAdmin' % (self.opts.app_label, self.opts.model_name)), (object, ), {'model': self.model})
             for form in formset.forms:
                 instance = form.instance
                 if instance.pk:

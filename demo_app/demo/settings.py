@@ -45,7 +45,7 @@ LANGUAGE_CODE = 'en-us'
 
 LANGUAGES = (
     ('en', gettext('English')),
-    ('zh_CN', gettext('Chinese')),
+    ('zh-cn', gettext('Chinese')),
 )
 
 SITE_ID = 1
@@ -111,6 +111,7 @@ MIDDLEWARE_CLASSES = (
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
+    'django.middleware.locale.LocaleMiddleware',
     # Uncomment the next line for simple clickjacking protection:
     # 'django.middleware.clickjacking.XFrameOptionsMiddleware',
 )
@@ -145,6 +146,8 @@ INSTALLED_APPS = (
 DATE_FORMAT = 'Y-m-d'
 DATETIME_FORMAT = 'Y-m-d H:i'
 TIME_FORMAT = 'H:i'
+
+TEST_RUNNER = 'django.test.runner.DiscoverRunner'
 
 # A sample logging configuration. The only tangible logging
 # performed by this configuration is to send an email to

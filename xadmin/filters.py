@@ -1,4 +1,3 @@
-import django
 from django.db import models
 from django.core.exceptions import ImproperlyConfigured
 from django.utils.encoding import smart_unicode
@@ -9,7 +8,15 @@ from django.template.context import Context
 from django.utils.safestring import mark_safe
 from django.utils.html import escape,format_html
 from django.utils.text import Truncator
-from django.core.cache import cache, get_cache
+from django.core.cache import cache
+try:
+    from django.core.cache import CacheHandler, caches
+    def get_cache(name):
+        return caches[name]
+except ImportError:  # Django < 1.7
+    from django.core.cache import get_cache
+    CacheHandler = None
+    caches = None
 
 from xadmin.views.list import EMPTY_CHANGELIST_VALUE
 import datetime
@@ -311,11 +318,11 @@ class RelatedFieldSearchFilter(FieldFilter):
 
     @classmethod
     def test(cls, field, request, params, model, admin_view, field_path):
-        if not (hasattr(field, 'rel') and bool(field.rel) or isinstance(field, models.related.RelatedObject)):
+        if not (hasattr(field, 'rel') and bool(field.rel) or isinstance(field, models.fields.related.ForeignObjectRel)):
             return False
         related_modeladmin = admin_view.admin_site._registry.get(
             get_model_from_relation(field))
-        return related_modeladmin and getattr(related_modeladmin, 'relfield_style', None) == 'fk-ajax'
+        return related_modeladmin and getattr(related_modeladmin, 'relfield_style', None) in ('fk-ajax', 'fk-select')
 
     def __init__(self, field, request, params, model, model_admin, field_path):
         other_model = get_model_from_relation(field)
@@ -328,15 +335,16 @@ class RelatedFieldSearchFilter(FieldFilter):
         super(RelatedFieldSearchFilter, self).__init__(
             field, request, params, model, model_admin, field_path)
 
+        related_modeladmin = self.admin_view.admin_site._registry.get(other_model)
+        self.relfield_style = related_modeladmin.relfield_style
+
         if hasattr(field, 'verbose_name'):
             self.lookup_title = field.verbose_name
         else:
             self.lookup_title = other_model._meta.verbose_name
         self.title = self.lookup_title
-
-        model_name = django.VERSION < (1, 7) and other_model._meta.module_name or other_model._meta.model_name
         self.search_url = model_admin.get_admin_url('%s_%s_changelist' % (
-            other_model._meta.app_label, model_name))
+            other_model._meta.app_label, other_model._meta.model_name))
         self.label = self.label_for_value(other_model, rel_name, self.lookup_exact_val) if self.lookup_exact_val else ""
         self.choices = '?'
         if field.rel.limit_choices_to:
@@ -356,6 +364,7 @@ class RelatedFieldSearchFilter(FieldFilter):
         context['search_url'] = self.search_url
         context['label'] = self.label
         context['choices'] = self.choices
+        context['relfield_style'] = self.relfield_style
         return context
 
 
@@ -364,7 +373,7 @@ class RelatedFieldListFilter(ListFieldFilter):
 
     @classmethod
     def test(cls, field, request, params, model, admin_view, field_path):
-        return (hasattr(field, 'rel') and bool(field.rel) or isinstance(field, models.related.RelatedObject))
+        return (hasattr(field, 'rel') and bool(field.rel) or isinstance(field, models.fields.related.ForeignObjectRel))
 
     def __init__(self, field, request, params, model, model_admin, field_path):
         other_model = get_model_from_relation(field)
@@ -386,7 +395,7 @@ class RelatedFieldListFilter(ListFieldFilter):
         self.title = self.lookup_title
 
     def has_output(self):
-        if (isinstance(self.field, models.related.RelatedObject)
+        if (isinstance(self.field, models.fields.related.ForeignObjectRel)
                 and self.field.field.null or hasattr(self.field, 'rel')
                 and self.field.null):
             extra = 1
@@ -412,7 +421,7 @@ class RelatedFieldListFilter(ListFieldFilter):
                 }, [self.lookup_isnull_name]),
                 'display': val,
             }
-        if (isinstance(self.field, models.related.RelatedObject)
+        if (isinstance(self.field, models.fields.related.ForeignObjectRel)
                 and self.field.field.null or hasattr(self.field, 'rel')
                 and self.field.null):
             yield {

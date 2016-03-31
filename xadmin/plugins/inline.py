@@ -1,11 +1,13 @@
 import copy
 import inspect
+from crispy_forms.utils import TEMPLATE_PACK
 from django import forms
 from django.forms.formsets import all_valid, DELETION_FIELD_NAME
-from django.forms.models import inlineformset_factory, BaseInlineFormSet
-from django.contrib.contenttypes.generic import BaseGenericInlineFormSet, generic_inlineformset_factory
+from django.forms.models import inlineformset_factory, BaseInlineFormSet, modelform_defines_fields
+from django.contrib.contenttypes.forms import BaseGenericInlineFormSet, generic_inlineformset_factory
 from django.template import loader
 from django.template.loader import render_to_string
+from django.contrib.auth import get_permission_codename
 from xadmin.layout import FormHelper, Layout, flatatt, Container, Column, Field, Fieldset
 from xadmin.sites import site
 from xadmin.views import BaseAdminPlugin, ModelFormAdminView, DetailAdminView, filter_hook
@@ -20,7 +22,7 @@ class ShowField(Field):
         if admin_view.style == 'table':
             self.template = "xadmin/layout/field_value_td.html"
 
-    def render(self, form, form_style, context):
+    def render(self, form, form_style, context, template_pack=TEMPLATE_PACK):
         html = ''
         detail = form.detail
         for field in self.fields:
@@ -33,10 +35,10 @@ class ShowField(Field):
 
 class DeleteField(Field):
 
-    def render(self, form, form_style, context):
+    def render(self, form, form_style, context, template_pack=TEMPLATE_PACK):
         if form.instance.pk:
             self.attrs['type'] = 'hidden'
-            return super(DeleteField, self).render(form, form_style, context)
+            return super(DeleteField, self).render(form, form_style, context, template_pack=template_pack)
         else:
             return ""
 
@@ -157,6 +159,7 @@ class InlineModelAdmin(ModelFormAdminView):
             "form": self.form,
             "formset": self.formset,
             "fk_name": self.fk_name,
+            'fields': forms.ALL_FIELDS,
             "exclude": exclude,
             "formfield_callback": self.formfield_for_dbfield,
             "extra": self.extra,
@@ -164,6 +167,7 @@ class InlineModelAdmin(ModelFormAdminView):
             "can_delete": can_delete,
         }
         defaults.update(kwargs)
+
         return inlineformset_factory(self.parent_model, self.model, **defaults)
 
     @filter_hook
@@ -250,8 +254,9 @@ class InlineModelAdmin(ModelFormAdminView):
     def has_add_permission(self):
         if self.opts.auto_created:
             return self.has_change_permission()
-        return self.user.has_perm(
-            self.opts.app_label + '.' + self.opts.get_add_permission())
+
+        codename = get_permission_codename('add', self.opts)
+        return self.user.has_perm("%s.%s" % (self.opts.app_label, codename))
 
     def has_change_permission(self):
         opts = self.opts
@@ -260,14 +265,16 @@ class InlineModelAdmin(ModelFormAdminView):
                 if field.rel and field.rel.to != self.parent_model:
                     opts = field.rel.to._meta
                     break
-        return self.user.has_perm(
-            opts.app_label + '.' + opts.get_change_permission())
+
+        codename = get_permission_codename('change', opts)
+        return self.user.has_perm("%s.%s" % (opts.app_label, codename))
 
     def has_delete_permission(self):
         if self.opts.auto_created:
             return self.has_change_permission()
-        return self.user.has_perm(
-            self.opts.app_label + '.' + self.opts.get_delete_permission())
+
+        codename = get_permission_codename('delete', self.opts)
+        return self.user.has_perm("%s.%s" % (self.opts.app_label, codename))
 
 
 class GenericInlineModelAdmin(InlineModelAdmin):
@@ -298,9 +305,11 @@ class GenericInlineModelAdmin(InlineModelAdmin):
             "can_delete": can_delete,
             "can_order": False,
             "max_num": self.max_num,
-            "exclude": exclude
+            "exclude": exclude,
+            'fields': forms.ALL_FIELDS
         }
         defaults.update(kwargs)
+
         return generic_inlineformset_factory(self.model, **defaults)
 
 
@@ -321,7 +330,7 @@ class InlineFormset(Fieldset):
         self.flat_attrs = flatatt(kwargs)
         self.extra_attrs = formset.style.get_attrs()
 
-    def render(self, form, form_style, context):
+    def render(self, form, form_style, context, template_pack=TEMPLATE_PACK):
         return render_to_string(
             self.template, dict({'formset': self, 'prefix': self.formset.prefix, 'inline_style': self.inline_style}, **self.extra_attrs),
             context_instance=context)
@@ -333,7 +342,7 @@ class Inline(Fieldset):
         self.model = rel_model
         self.fields = []
 
-    def render(self, form, form_style, context):
+    def render(self, form, form_style, context, template_pack=TEMPLATE_PACK):
         return ""
 
 
@@ -441,7 +450,7 @@ class InlineFormsetPlugin(BaseAdminPlugin):
             replace_field_to_value(formset.helper.layout, inline)
             model = inline.model
             opts = model._meta
-            fake_admin_class = type(str('%s%sFakeAdmin' % (opts.app_label, opts.module_name)), (object, ), {'model': model})
+            fake_admin_class = type(str('%s%sFakeAdmin' % (opts.app_label, opts.model_name)), (object, ), {'model': model})
             for form in formset.forms:
                 instance = form.instance
                 if instance.pk:
