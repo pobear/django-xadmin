@@ -21,9 +21,7 @@
   {% endif %}
 
   {% view_block 'before_fieldsets' %}
-
   {% crispy form %}
-
   {% view_block 'after_fieldsets' %}
 
   {% block submit_buttons_bottom %}{% include "xadmin/includes/submit_line.html" %}{% endblock %}

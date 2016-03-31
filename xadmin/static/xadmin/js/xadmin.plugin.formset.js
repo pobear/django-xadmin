@@ -66,8 +66,8 @@
             var template = $('#' + options.prefix + '-empty');
             if(template.is('textarea')){
                 template = $(template.val());
-            }else if(template.is('script')){
-                template = $(template.html());
+            }else if(template.is('template')){
+                template = $(template.html().replace(/(?:^\s+|\s+$)/g, ''));
             }
             template.removeAttr('id');
             if(template.data("replace-id")){
