@@ -5,8 +5,8 @@
         f.find('select:not(.select-search):not([multiple=multiple])').selectize();
         f.find('select.select-search').each(function(){
             var $el = $(this);
-            console.info($el);
-            console.info($el.data('search-url'));
+            //console.info($el);
+            //console.info($el.data('search-url'));
             var preload = $el.hasClass('select-preload');
             $el.selectize({
                 valueField: 'id',
