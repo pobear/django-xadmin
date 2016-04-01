@@ -18,16 +18,14 @@
   {% vendor 'font-awesome.css' 'xadmin.main.css' 'xadmin.plugins.css' 'xadmin.responsive.css' %}
   {{ media.css }}
   {% block extrastyle %}{% endblock %}
-  {% vendor 'jquery.js' %}
+  {% vendor 'jquery.js' 'xadmin.main.js' %}
+    {% url 'xadmin:index' as indexurl %}
   <script type="text/javascript">
     window.__admin_media_prefix__ = "{% filter escapejs %}{% static "xadmin/" %}{% endfilter %}";
     window.__admin_path_prefix__ = "{% filter escapejs %}{{ indexurl }}{% endfilter %}";
     window.__admin_language_code__ = "{{LANGUAGE_CODE}}";
   </script>
   <script type="text/javascript" src="{% url 'xadmin:jsi18n' %}"></script>
-  {% vendor 'jquery-ui-sortable.js' 'bootstrap.js' 'xadmin.main.js' 'xadmin.responsive.js' %}
-  {{ media.js }}
-  {% url 'xadmin:index' as indexurl %}
   {% block extrahead %}{% endblock %}
   {% view_block 'extrahead' %}
 </head>
@@ -39,5 +37,7 @@
   {% endblock body %}
   {% block extrabody %}{% endblock %}
   {% view_block 'extrabody' %}
+  {% vendor 'jquery-ui-sortable.js' 'bootstrap.js' 'xadmin.responsive.js' %}
+  {{ media.js }}
 </body>
 </html>

@@ -139,6 +139,7 @@ class ModelFormAdminView(ModelAdminView):
     @filter_hook
     def instance_forms(self):
         self.form_obj = self.model_form(**self.get_form_datas())
+        # print '++' * 30 + '\n', type(self.form_obj.media)
 
     def setup_forms(self):
         helper = self.get_form_helper()
@@ -178,8 +179,7 @@ class ModelFormAdminView(ModelAdminView):
         if defaults['fields'] is None and not modelform_defines_fields(defaults['form']):
             defaults['fields'] = forms.ALL_FIELDS
 
-        return modelform_factory(self.model, **defaults)
-
+        # return modelform_factory(self.model, **defaults)
         try:
             return modelform_factory(self.model, **defaults)
         except FieldError as e:
@@ -334,7 +334,8 @@ class ModelFormAdminView(ModelAdminView):
 
     @filter_hook
     def get_media(self):
-        return super(ModelFormAdminView, self).get_media() + self.form_obj.media + \
+        # return super(ModelFormAdminView, self).get_media() + self.form_obj.media + \
+        return super(ModelFormAdminView, self).get_media() + \
             self.vendor('xadmin.page.form.js', 'xadmin.form.css')
 
 
