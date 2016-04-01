@@ -283,8 +283,6 @@ class ModelFormAdminView(ModelAdminView):
     def get_context(self):
         add = self.org_obj is None
         change = self.org_obj is not None
-        print '++' * 30 + '\n', dir(self.form_obj)
-        # self.form_obj.media = None
 
         new_context = {
             'form': self.form_obj,
